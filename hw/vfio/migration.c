@@ -806,12 +806,16 @@ int vfio_migration_probe(VFIODevice *vbasedev, Error **errp)
 
     ret = vfio_get_dev_region_info(vbasedev, VFIO_REGION_TYPE_MIGRATION,
                                    VFIO_REGION_SUBTYPE_MIGRATION, &info);
-    if (ret) {
+    error_setg(&vbasedev->migration_blocker,
+               "vfio_get_dev_region_info: %d", ret);
+     if (ret) {
         goto add_blocker;
     }
 
     ret = vfio_migration_init(vbasedev, info);
-    if (ret) {
+    error_setg(&vbasedev->migration_blocker,
+               "vfio_migration_init: %d", ret);
+     if (ret) {
         goto add_blocker;
     }
 
