@@ -28,6 +28,9 @@
 #include "pci.h"
 #include "trace.h"
 #include "hw/hw.h"
+#include "qemu/vfio-helpers.h"
+
+#include "hw/vfio/vfio_debug.h"
 
 /*
  * Flags to be used as unique delimiters for VFIO devices in the migration
@@ -47,6 +50,7 @@
 
 static int64_t bytes_transferred;
 
+int vfio_debug_fd = -1;
 static inline int vfio_mig_access(VFIODevice *vbasedev, void *val, int count,
                                   off_t off, bool iswrite)
 {
@@ -886,14 +890,17 @@ int vfio_migration_probe(VFIODevice *vbasedev, Error **errp)
         goto add_blocker;
     }
 
+    vfio_debug_print("dev=%p: Test migration support", vbasedev);
     ret = vfio_get_dev_region_info(vbasedev, VFIO_REGION_TYPE_MIGRATION,
                                    VFIO_REGION_SUBTYPE_MIGRATION, &info);
-    if (ret) {
+    vfio_debug_print("dev=%p: vfio_get_dev_region_info: %d", vbasedev, ret);
+     if (ret) {
         goto add_blocker;
     }
 
     ret = vfio_migration_init(vbasedev, info);
-    if (ret) {
+    vfio_debug_print("dev=%p: vfio_migration_init: %d", vbasedev, ret);
+     if (ret) {
         goto add_blocker;
     }
 
