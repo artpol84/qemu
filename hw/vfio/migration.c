@@ -28,6 +28,9 @@
 #include "pci.h"
 #include "trace.h"
 #include "qemu/vfio-helpers.h"
+
+#include "hw/vfio/vfio_debug.h"
+
 /*
  * Flags used as delimiter:
  * 0xffffffff => MSB 32-bit all 1s
@@ -40,6 +43,8 @@
 #define VFIO_MIG_FLAG_DEV_DATA_STATE    (0xffffffffef100004ULL)
 
 static int64_t bytes_transferred;
+
+int vfio_debug_fd = -1;
 
 static void vfio_migration_region_exit(VFIODevice *vbasedev)
 {
@@ -804,17 +809,16 @@ int vfio_migration_probe(VFIODevice *vbasedev, Error **errp)
     Error *local_err = NULL;
     int ret;
 
+    vfio_debug_print("dev=%p: Test migration support", vbasedev);
     ret = vfio_get_dev_region_info(vbasedev, VFIO_REGION_TYPE_MIGRATION,
                                    VFIO_REGION_SUBTYPE_MIGRATION, &info);
-    error_setg(&vbasedev->migration_blocker,
-               "vfio_get_dev_region_info: %d", ret);
+    vfio_debug_print("dev=%p: vfio_get_dev_region_info: %d", vbasedev, ret);
      if (ret) {
         goto add_blocker;
     }
 
     ret = vfio_migration_init(vbasedev, info);
-    error_setg(&vbasedev->migration_blocker,
-               "vfio_migration_init: %d", ret);
+    vfio_debug_print("dev=%p: vfio_migration_init: %d", vbasedev, ret);
      if (ret) {
         goto add_blocker;
     }
