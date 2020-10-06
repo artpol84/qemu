@@ -42,6 +42,8 @@
 #include "migration/migration.h"
 #include "qemu/vfio-helpers.h"
 
+#include "hw/vfio/vfio_debug.h"
+
 VFIOGroupList vfio_group_list =
     QLIST_HEAD_INITIALIZER(vfio_group_list);
 static QLIST_HEAD(, VFIOAddressSpace) vfio_address_spaces =
@@ -1557,6 +1559,8 @@ static void vfio_get_iommu_info_migration(VFIOContainer *container,
     container->max_dirty_bitmap_size = cap_mig->max_dirty_bitmap_size;
     container->dirty_pgsizes = cap_mig->pgsize_bitmap;
 
+    vfio_debug_print("vfio_get_iommu_info_migration: %x, bit=%x", 
+            container->dirty_pgsizes, TARGET_PAGE_SIZE);
     /*
      * cpu_physical_memory_set_dirty_lebitmap() expects pages in bitmap of
      * TARGET_PAGE_SIZE to mark those dirty.
