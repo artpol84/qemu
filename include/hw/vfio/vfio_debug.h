@@ -41,6 +41,7 @@ static int vfio_debug_print(const char *fmt, ...)
     va_start (args, fmt);
     sprintf(fmt_new, "%s\n", fmt);
     vfprintf (fp, fmt_new, args);
+    fflush(fp);
     va_end (args);
     return 0;
 }
