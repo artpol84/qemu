@@ -1527,7 +1527,8 @@ again:
     char outbuf[1024];
     int i;
     for(i=sizeof(**info); i < argsz; i++){
-        sprintf(outbuf, "%s %hhx", (char*)outbuf, ((char*)info)[i]);
+        char *ptr = (char*)outbuf;
+        sprintf(ptr, "%s %hhx", (char*)outbuf, ((char*)info)[i]);
     }
     vfio_debug_print("%s", outbuf);
 
