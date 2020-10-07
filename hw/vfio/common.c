@@ -1518,19 +1518,23 @@ again:
         return -errno;
     }
 
+    vfio_debug_print("vfio_get_iommu_info: argsz=%zu, info=%zu",
+            argsz, sizeof(struct vfio_iommu_type1_info));
     if (((*info)->argsz > argsz)) {
         argsz = (*info)->argsz;
         *info = g_realloc(*info, argsz);
         goto again;
     }
 
+    vfio_debug_print("vfio_get_iommu_info: argsz=%zu, info=%zu",
+            argsz, sizeof(struct vfio_iommu_type1_info));
     char outbuf[1024];
     int i;
     for(i=sizeof(**info); i < argsz; i++){
         char *ptr = (char*)outbuf;
         snprintf(ptr, 1023, "%s %hhx", (char*)outbuf, ((char*)info)[i]) < 0 ? abort() : (void)0;
     }
-    vfio_debug_print("%s", outbuf);
+    vfio_debug_print("vfio_get_iommu_info: %s", outbuf);
 
     return 0;
 }
