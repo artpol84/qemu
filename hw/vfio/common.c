@@ -1524,6 +1524,13 @@ again:
         goto again;
     }
 
+    char outbuf[1024];
+    int i;
+    for(i=sizeof(**info); i < argsz; i++){
+        sprintf(outbuf, "%s %hhx", outbuf, ((char*)info)[i]);
+    }
+    vfio_debug_print("%s", outbuf);
+
     return 0;
 }
 
