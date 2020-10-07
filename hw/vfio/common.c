@@ -1534,7 +1534,7 @@ again:
 
     for(i = sizeof(struct vfio_iommu_type1_info); i < argsz; i++){
         char *ptr = (char*)outbuf;
-        snprintf(ptr, 1023, "%s %hhx", (char*)outbuf, ((char*)*info)[i]) < 0 ? abort() : (void)0;
+        sprintf(ptr + strlen(ptr), " %hhx", ((char*)*info)[i]) < 0 ? abort() : (void)0;
         vfio_debug_print("vfio_get_iommu_info: i=%zu, byte=%hhx (%s)", i, ((char*)*info)[i], outbuf);
     }
     vfio_debug_print("vfio_get_iommu_info: %s", outbuf);
