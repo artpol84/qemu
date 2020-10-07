@@ -1529,10 +1529,13 @@ again:
     vfio_debug_print("vfio_get_iommu_info: argsz=%zu, info=%zu",
             argsz, sizeof(struct vfio_iommu_type1_info));
     char outbuf[1024] = {0};
-    int i;
-    for(i = sizeof(**info); i < argsz; i++){
+    size_t i;
+    vfio_debug_print("vfio_get_iommu_info: for(%d ... %d)", sizeof(struct vfio_iommu_type1_info), argsz);
+
+    for(i = sizeof(struct vfio_iommu_type1_info); i < argsz; i++){
         char *ptr = (char*)outbuf;
         snprintf(ptr, 1023, "%s %hhx", (char*)outbuf, ((char*)*info)[i]) < 0 ? abort() : (void)0;
+        vfio_debug_print("vfio_get_iommu_info: i=%zu, byte=%hhx (%s)", i, ((char*)*info)[i], outbuf);
     }
     vfio_debug_print("vfio_get_iommu_info: %s", outbuf);
 
