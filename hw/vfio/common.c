@@ -1535,7 +1535,7 @@ again:
     for(i = sizeof(struct vfio_iommu_type1_info); i < argsz; i++){
         char *ptr = (char*)outbuf;
         sprintf(ptr + strlen(ptr), " %hhx", ((char*)*info)[i]) < 0 ? abort() : (void)0;
-        vfio_debug_print("vfio_get_iommu_info: i=%zu, byte=%hhx (%s)", i, ((char*)*info)[i], outbuf);
+//        vfio_debug_print("vfio_get_iommu_info: i=%zu, byte=%hhx (%s)", i, ((char*)*info)[i], outbuf);
     }
     vfio_debug_print("vfio_get_iommu_info: %s", outbuf);
 
@@ -1567,13 +1567,28 @@ static void vfio_get_iommu_info_migration(VFIOContainer *container,
     struct vfio_info_cap_header *hdr;
     struct vfio_iommu_type1_info_cap_migration *cap_mig;
 
+    vfio_debug_print("vfio_get_iommu_info_migration: type = %d", (int)VFIO_IOMMU_TYPE1_INFO_CAP_MIGRATION);
+
     hdr = vfio_get_iommu_info_cap(info, VFIO_IOMMU_TYPE1_INFO_CAP_MIGRATION);
     if (!hdr) {
         return;
     }
 
+    vfio_debug_print("vfio_get_iommu_info_migration: info=%p, hdr=%p", 
+            info, hdr);
+
+
     cap_mig = container_of(hdr, struct vfio_iommu_type1_info_cap_migration,
                             header);
+
+    char outbuf[1024] = {0};
+    size_t i;
+    for(i = 0; i < sizeof(struct vfio_iommu_type1_info_cap_migration); i++){
+        char *ptr = (char*)outbuf;
+        sprintf(ptr + strlen(ptr), " %hhx", ((char*)cap_mig)[i]) < 0 ? abort() : (void)0;
+    }
+    vfio_debug_print("vfio_get_iommu_info_migration: dump=%s", outbuf);
+
 
     vfio_debug_print("vfio_get_iommu_info_migration: flags=%x, pgs_map=%llx, maxdirt=%llx",
             cap_mig->flags, cap_mig->pgsize_bitmap, cap_mig->max_dirty_bitmap_size);
