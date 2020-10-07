@@ -1451,10 +1451,15 @@ static int vfio_get_iommu_type(VFIOContainer *container,
 {
     int iommu_types[] = { VFIO_TYPE1v2_IOMMU, VFIO_TYPE1_IOMMU,
                           VFIO_SPAPR_TCE_v2_IOMMU, VFIO_SPAPR_TCE_IOMMU };
+    const char *iommu_types_str[] = { "VFIO_TYPE1v2_IOMMU", "VFIO_TYPE1_IOMMU",
+                          "VFIO_SPAPR_TCE_v2_IOMMU", "VFIO_SPAPR_TCE_IOMMU" };
+
+
     int i;
 
     for (i = 0; i < ARRAY_SIZE(iommu_types); i++) {
         if (ioctl(container->fd, VFIO_CHECK_EXTENSION, iommu_types[i])) {
+            vfio_debug_print("Fount IOMMU: %s", iommu_types_str[i]);
             return iommu_types[i];
         }
     }
@@ -1568,6 +1573,9 @@ static void vfio_get_iommu_info_migration(VFIOContainer *container,
     assert(container->dirty_pgsizes & TARGET_PAGE_SIZE);
 }
 
+/*
+ * BOOKMARK(artpol): Start of the VFIO (entrypoint)
+ */
 static int vfio_connect_container(VFIOGroup *group, AddressSpace *as,
                                   Error **errp)
 {
@@ -1829,6 +1837,9 @@ static void vfio_disconnect_container(VFIOGroup *group)
     }
 }
 
+/*
+ * BOOKMARK(artpol): VFIO Entry-point
+ */
 VFIOGroup *vfio_get_group(int groupid, AddressSpace *as, Error **errp)
 {
     VFIOGroup *group;
