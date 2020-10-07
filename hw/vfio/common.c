@@ -1571,6 +1571,7 @@ static void vfio_get_iommu_info_migration(VFIOContainer *container,
 
     hdr = vfio_get_iommu_info_cap(info, VFIO_IOMMU_TYPE1_INFO_CAP_MIGRATION);
     if (!hdr) {
+        vfio_debug_print("vfio_get_iommu_info_migration: type = %d: NOT FOUND", (int)VFIO_IOMMU_TYPE1_INFO_CAP_MIGRATION);
         return;
     }
 
