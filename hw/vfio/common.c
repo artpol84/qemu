@@ -1560,6 +1560,9 @@ static void vfio_get_iommu_info_migration(VFIOContainer *container,
     cap_mig = container_of(hdr, struct vfio_iommu_type1_info_cap_migration,
                             header);
 
+    vfio_debug_print("vfio_get_iommu_info_migration: flags=%x, pgs_map=%llx, maxdirt=%llx",
+            cap_mig->flags, cap_mig->pgsize_bitmap, cap_mig->max_dirty_bitmap_size);
+
     container->dirty_pages_supported = true;
     container->max_dirty_bitmap_size = cap_mig->max_dirty_bitmap_size;
     container->dirty_pgsizes = cap_mig->pgsize_bitmap;
