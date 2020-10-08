@@ -66,6 +66,8 @@ static int vfio_migration_region_init(VFIODevice *vbasedev, int index)
     Object *obj = NULL;
     int ret = -EINVAL;
 
+    vfio_debug_print("vfio_migration_region_init: dev=%p, idx=%d", 
+                    vbasedev, index);
     if (!vbasedev->ops->vfio_get_object) {
         return ret;
     }
@@ -90,9 +92,13 @@ static int vfio_migration_region_init(VFIODevice *vbasedev, int index)
         goto err;
     }
 
+    vfio_debug_print("vfio_migration_region_init: dev=%p, idx=%d: done", 
+                    vbasedev, index);
     return 0;
 
 err:
+    vfio_debug_print("vfio_migration_region_init: dev=%p, idx=%d, ERROR = %d", 
+                    vbasedev, index, ret);
     vfio_migration_region_exit(vbasedev);
     return ret;
 }
@@ -105,17 +111,25 @@ static int vfio_migration_set_state(VFIODevice *vbasedev, uint32_t mask,
     uint32_t device_state;
     int ret;
 
+    vfio_debug_print("vfio_migration_set_state: start dev=%p, val=%x", 
+            vbasedev, value);
     ret = pread(vbasedev->fd, &device_state, sizeof(device_state),
                 region->fd_offset + offsetof(struct vfio_device_migration_info,
                                               device_state));
     if (ret < 0) {
         error_report("%s: Failed to read device state %d %s",
                      vbasedev->name, ret, strerror(errno));
+        vfio_debug_print("vfio_migration_set_state: dev=%p: failed reading state", 
+            vbasedev);
         return ret;
     }
 
+    vfio_debug_print("vfio_migration_set_state: start dev=%p, cur_state=%x", 
+            vbasedev, device_state);
     device_state = (device_state & mask) | value;
 
+    vfio_debug_print("vfio_migration_set_state: start dev=%p, new_state=%x", 
+            vbasedev, device_state);
     if (!VFIO_DEVICE_STATE_VALID(device_state)) {
         return -EINVAL;
     }
@@ -127,6 +141,8 @@ static int vfio_migration_set_state(VFIODevice *vbasedev, uint32_t mask,
         error_report("%s: Failed to set device state %d %s",
                      vbasedev->name, ret, strerror(errno));
 
+        vfio_debug_print("vfio_migration_set_state: dev=%p: failed writing state", 
+            vbasedev);
         ret = pread(vbasedev->fd, &device_state, sizeof(device_state),
                 region->fd_offset + offsetof(struct vfio_device_migration_info,
                 device_state));
@@ -143,6 +159,8 @@ static int vfio_migration_set_state(VFIODevice *vbasedev, uint32_t mask,
         }
     }
 
+    vfio_debug_print("vfio_migration_set_state: dev=%p: done", 
+           vbasedev);
     vbasedev->device_state = device_state;
     trace_vfio_migration_set_state(vbasedev->name, device_state);
     return 0;
@@ -279,6 +297,8 @@ static int vfio_update_pending(VFIODevice *vbasedev)
     uint64_t pending_bytes = 0;
     int ret;
 
+    vfio_debug_print("vfio_update_pending: dev=%p start", 
+                    vbasedev);
     ret = pread(vbasedev->fd, &pending_bytes, sizeof(pending_bytes),
                 region->fd_offset + offsetof(struct vfio_device_migration_info,
                                              pending_bytes));
@@ -286,8 +306,13 @@ static int vfio_update_pending(VFIODevice *vbasedev)
         error_report("%s: Failed to get pending bytes %d",
                      vbasedev->name, ret);
         migration->pending_bytes = 0;
+        vfio_debug_print("vfio_update_pending: dev=%p failed", 
+                    vbasedev);
         return (ret < 0) ? ret : -EINVAL;
     }
+
+    vfio_debug_print("vfio_update_pending: dev=%p done, pending=%llu", 
+                    vbasedev, pending_bytes);
 
     migration->pending_bytes = pending_bytes;
     trace_vfio_update_pending(vbasedev->name, pending_bytes);
@@ -372,6 +397,8 @@ static int vfio_save_setup(QEMUFile *f, void *opaque)
     VFIOMigration *migration = vbasedev->migration;
     int ret;
 
+    vfio_debug_print("vfio_save_setup: dev=%p", 
+                    vbasedev);
     trace_vfio_save_setup(vbasedev->name);
 
     qemu_put_be64(f, VFIO_MIG_FLAG_DEV_SETUP_STATE);
@@ -407,6 +434,8 @@ static int vfio_save_setup(QEMUFile *f, void *opaque)
         return ret;
     }
 
+    vfio_debug_print("vfio_save_setup: dev=%p: done", 
+                    vbasedev);
     return 0;
 }
 
@@ -450,21 +479,35 @@ static int vfio_save_iterate(QEMUFile *f, void *opaque)
     VFIOMigration *migration = vbasedev->migration;
     int ret, data_size;
 
+    vfio_debug_print("vfio_save_iterate: start dev=%p", 
+            vbasedev);
     qemu_put_be64(f, VFIO_MIG_FLAG_DEV_DATA_STATE);
 
     if (migration->pending_bytes == 0) {
+        vfio_debug_print("vfio_save_iterate: dev=%p vfio_update_pending() ...", 
+            vbasedev);
         ret = vfio_update_pending(vbasedev);
+        vfio_debug_print("vfio_save_iterate: dev=%p vfio_update_pending() = %d", 
+            vbasedev, ret);
         if (ret) {
+            vfio_debug_print("vfio_save_iterate: start dev=%p, FAIL", 
+            vbasedev, ret);
             return ret;
         }
 
         if (migration->pending_bytes == 0) {
+            vfio_debug_print("vfio_save_iterate: start dev=%p, FINISHED!", 
+                    vbasedev);
             /* indicates data finished, goto complete phase */
             return 1;
         }
     }
 
+    vfio_debug_print("vfio_save_iterate: dev=%p migration->pending_bytes=%llu", 
+            vbasedev, migration->pending_bytes);
     data_size = vfio_save_buffer(f, vbasedev);
+    vfio_debug_print("vfio_save_iterate: dev=%p vfio_save_buffer() = %d", 
+            vbasedev, data_size);
 
     if (data_size < 0) {
         error_report("%s: vfio_save_buffer failed %s", vbasedev->name,
@@ -476,11 +519,15 @@ static int vfio_save_iterate(QEMUFile *f, void *opaque)
 
     ret = qemu_file_get_error(f);
     if (ret) {
+        vfio_debug_print("vfio_save_iterate: dev=%p qemu_file_get_error() = %d", 
+            vbasedev, ret);
         return ret;
     }
 
     trace_vfio_save_iterate(vbasedev->name, data_size);
 
+    vfio_debug_print("vfio_save_iterate: dev=%p done", 
+            vbasedev);
     return 0;
 }
 
@@ -705,6 +752,7 @@ static void vfio_vmstate_change(void *opaque, int running, RunState state)
 {
     VFIODevice *vbasedev = opaque;
 
+    vfio_debug_print("vfio_vmstate_change: start dev=%p", vbasedev);
     if ((vbasedev->vm_running != running)) {
         int ret;
         uint32_t value = 0, mask = 0;
@@ -727,7 +775,8 @@ static void vfio_vmstate_change(void *opaque, int running, RunState state)
         trace_vfio_vmstate_change(vbasedev->name, running, RunState_str(state),
                                   value & mask);
     }
-}
+    vfio_debug_print("vfio_vmstate_change: done dev=%p", vbasedev);
+ }
 
 static void vfio_migration_state_notifier(Notifier *notifier, void *data)
 {
@@ -760,6 +809,7 @@ static int vfio_migration_init(VFIODevice *vbasedev,
     int ret;
     char id[256] = "";
 
+    vfio_debug_print("vfio_migration_init: start dev=%p", vbasedev);
     vbasedev->migration = g_new0(VFIOMigration, 1);
 
     ret = vfio_migration_region_init(vbasedev, info->index);
@@ -768,6 +818,7 @@ static int vfio_migration_init(VFIODevice *vbasedev,
                      vbasedev->name);
         g_free(vbasedev->migration);
         vbasedev->migration = NULL;
+        vfio_debug_print("vfio_migration_init: failed dev=%p", vbasedev);
         return ret;
     }
 
@@ -793,6 +844,7 @@ static int vfio_migration_init(VFIODevice *vbasedev,
                                                           vbasedev);
     vbasedev->migration_state.notify = vfio_migration_state_notifier;
     add_migration_state_change_notifier(&vbasedev->migration_state);
+    vfio_debug_print("vfio_migration_init: done dev=%p", vbasedev);
     return ret;
 }
 
