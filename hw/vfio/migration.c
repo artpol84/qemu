@@ -447,16 +447,14 @@ static int vfio_save_iterate(QEMUFile *f, void *opaque)
 
     qemu_put_be64(f, VFIO_MIG_FLAG_DEV_DATA_STATE);
 
-    if (migration->pending_bytes == 0) {
-        ret = vfio_update_pending(vbasedev);
-        if (ret) {
-            return ret;
-        }
+    ret = vfio_update_pending(vbasedev);
+    if (ret) {
+        return ret;
+    }
 
-        if (migration->pending_bytes == 0) {
-            /* indicates data finished, goto complete phase */
-            return 1;
-        }
+    if (migration->pending_bytes == 0) {
+        /* indicates data finished, goto complete phase */
+        return 1;
     }
 
     data_size = vfio_save_buffer(f, vbasedev);
