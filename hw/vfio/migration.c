@@ -222,6 +222,10 @@ static int vfio_save_buffer(QEMUFile *f, VFIODevice *vbasedev)
     uint64_t data_offset = 0, data_size = 0, size;
     int ret;
 
+    vfio_debug_print("vfio_save_buffer: dev=%p: start", 
+                    vbasedev);
+ 
+
     ret = pread(vbasedev->fd, &data_offset, sizeof(data_offset),
                 region->fd_offset + offsetof(struct vfio_device_migration_info,
                                              data_offset));
@@ -231,6 +235,9 @@ static int vfio_save_buffer(QEMUFile *f, VFIODevice *vbasedev)
         return -EINVAL;
     }
 
+    vfio_debug_print("vfio_save_buffer: dev=%p: offset = %lld", 
+                    vbasedev, data_offset);
+
     ret = pread(vbasedev->fd, &data_size, sizeof(data_size),
                 region->fd_offset + offsetof(struct vfio_device_migration_info,
                                              data_size));
@@ -239,6 +246,9 @@ static int vfio_save_buffer(QEMUFile *f, VFIODevice *vbasedev)
                      vbasedev->name, ret);
         return -EINVAL;
     }
+
+    vfio_debug_print("vfio_save_buffer: dev=%p: offset = %lld", 
+                    vbasedev, data_offset);
 
     trace_vfio_save_buffer(vbasedev->name, data_offset, data_size,
                            migration->pending_bytes);
@@ -277,6 +287,8 @@ static int vfio_save_buffer(QEMUFile *f, VFIODevice *vbasedev)
         if (!buffer_mmaped) {
             g_free(buf);
         }
+        vfio_debug_print("vfio_save_buffer: dev=%p: store %d B from offset = %lld", 
+                vbasedev, sec_size, data_offset);
         size -= sec_size;
         data_offset += sec_size;
     }
@@ -415,7 +427,9 @@ static int vfio_save_setup(QEMUFile *f, void *opaque)
         }
     }
 
-    ret = vfio_migration_set_state(vbasedev, VFIO_DEVICE_STATE_MASK,
+    vfio_debug_print("vfio_save_setup: dev=%p: state = saving", 
+                    vbasedev);
+     ret = vfio_migration_set_state(vbasedev, VFIO_DEVICE_STATE_MASK,
                                    VFIO_DEVICE_STATE_SAVING);
     if (ret) {
         error_report("%s: Failed to set state SAVING", vbasedev->name);
@@ -483,18 +497,16 @@ static int vfio_save_iterate(QEMUFile *f, void *opaque)
             vbasedev);
     qemu_put_be64(f, VFIO_MIG_FLAG_DEV_DATA_STATE);
 
-    if (migration->pending_bytes == 0) {
-        vfio_debug_print("vfio_save_iterate: dev=%p vfio_update_pending() ...", 
-            vbasedev);
-        ret = vfio_update_pending(vbasedev);
-        vfio_debug_print("vfio_save_iterate: dev=%p vfio_update_pending() = %d", 
+    ret = vfio_update_pending(vbasedev);
+    vfio_debug_print("vfio_save_iterate: dev=%p vfio_update_pending() = %d", 
             vbasedev, ret);
-        if (ret) {
-            vfio_debug_print("vfio_save_iterate: start dev=%p, FAIL", 
-            vbasedev, ret);
-            return ret;
-        }
+    if (ret) {
+        vfio_debug_print("vfio_save_iterate: start dev=%p, FAIL", 
+                vbasedev, ret);
+        return ret;
+    }
 
+    if (migration->pending_bytes == 0) {
         if (migration->pending_bytes == 0) {
             vfio_debug_print("vfio_save_iterate: start dev=%p, FINISHED!", 
                     vbasedev);
