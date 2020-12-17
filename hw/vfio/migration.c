@@ -631,7 +631,9 @@ static int vfio_load_state(QEMUFile *f, void *opaque, int version_id)
                 buffer_mmaped = (buf != NULL);
 
                 if (!buffer_mmaped) {
+                    error_report("%s: Buffer size = %zu", __func__, sec_size);
                     buf = g_try_malloc(sec_size);
+
                     if (!buf) {
                         error_report("%s: Error allocating buffer ", __func__);
                         return -ENOMEM;
